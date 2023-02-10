@@ -1,0 +1,6 @@
+#ifndef GLSLANGVALIDATORLIB_H
+#define GLSLANGVALIDATORLIB_H
+
+void GLSLangValidatorLibFunc();
+
+#endif	/*	GLSLANGVALIDATORLIB_H	*/
