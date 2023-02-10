@@ -63,6 +63,46 @@
 
 #include "../glslang/OSDependent/osinclude.h"
 
+
+
+
+
+
+
+
+
+
+
+
+/*	HELLO RAY (hi me!)
+	
+	- this standalone already lets you pass the shader contents as a string, so ingest doesn't require modification
+	- i'm adding an NSMutableData instance that gets populated with the binary contents of the SPIRV shader.
+	- i'm adding an NSMutableData instance that gets populated with the shader input string
+	- i'm calling what was the main() function of this CLI manually from my obj-c wrapper class- basically, 
+	i'm simulating the process of invoking the CLI.  when i do so, i need to specify the "stdin" mode, because 
+	that's where i populate the ingest data with the contents of the passed shader in my wrapper class.
+	
+	- the modifications i'm making around this are very minimal, and very specific- this is NOT safe 
+	for general use outside of this class without more work!
+*/
+#include "GLSLangValidatorLib.hpp"
+#include <mutex>
+#include <vector>
+std::mutex			_GLSLangValidatorLibLock;
+const std::string		*_shaderIngestContents = nullptr;	//	never retained locally
+std::vector<uint32_t>	*_spirvBinaryOutputContents = nullptr;
+
+
+
+
+
+
+
+
+
+
+
 // Build-time generated includes
 #include "glslang/build_info.h"
 
@@ -1434,8 +1474,8 @@ void CompileAndLinkShaderUnits(std::vector<ShaderCompUnit> compUnits)
 
         if (! (Options & EOptionSuppressInfolog) &&
             ! (Options & EOptionMemoryLeakMode)) {
-            if (!beQuiet)
-                PutsIfNonEmpty(compUnit.fileName[0].c_str());
+            //if (!beQuiet)
+            //    PutsIfNonEmpty(compUnit.fileName[0].c_str());
             PutsIfNonEmpty(shader->getInfoLog());
             PutsIfNonEmpty(shader->getInfoDebugLog());
         }
@@ -1499,16 +1539,30 @@ void CompileAndLinkShaderUnits(std::vector<ShaderCompUnit> compUnits)
                     spvOptions.disassemble = SpvToolsDisassembler;
                     spvOptions.validate = SpvToolsValidate;
                     glslang::GlslangToSpv(*program.getIntermediate((EShLanguage)stage), spirv, &logger, &spvOptions);
-
+					
+					
+					
+					
+					//	HELLO RAY (hi me!)
+					size_t			targetBinarySizeInBytes = (sizeof(unsigned int) * spirv.size());
+					_spirvBinaryOutputContents->reserve( (targetBinarySizeInBytes/4)+1 );
+					for (int i=0; i<(int)spirv.size(); ++i)	{
+						uint32_t		word = spirv[i];
+						_spirvBinaryOutputContents->push_back(word);
+					}
+					
+					
+					
+					
                     // Dump the spv to a file or stdout, etc., but only if not doing
                     // memory/perf testing, as it's not internal to programmatic use.
                     if (! (Options & EOptionMemoryLeakMode)) {
-                        printf("%s", logger.getAllMessages().c_str());
-                        if (Options & EOptionOutputHexadecimal) {
-                            glslang::OutputSpvHex(spirv, GetBinaryName((EShLanguage)stage), variableName);
-                        } else {
-                            glslang::OutputSpvBin(spirv, GetBinaryName((EShLanguage)stage));
-                        }
+                        //printf("%s", logger.getAllMessages().c_str());
+                        //if (Options & EOptionOutputHexadecimal) {
+                        //    glslang::OutputSpvHex(spirv, GetBinaryName((EShLanguage)stage), variableName);
+                        //} else {
+                        //    glslang::OutputSpvBin(spirv, GetBinaryName((EShLanguage)stage));
+                        //}
 
                         outputFiles.push_back(GetBinaryName((EShLanguage)stage));
 #ifndef GLSLANG_WEB
@@ -1561,9 +1615,20 @@ void CompileAndLinkShaderFiles(glslang::TWorklist& Worklist)
     // file of a certain type.
     if ((Options & EOptionStdin) != 0) {
         ShaderCompUnit compUnit(FindLanguage("stdin"));
-        std::istreambuf_iterator<char> begin(std::cin), end;
-        std::string tempString(begin, end);
-        char* fileText = strdup(tempString.c_str());
+        //std::istreambuf_iterator<char> begin(std::cin), end;
+        //std::string tempString(begin, end);
+        //char* fileText = strdup(tempString.c_str());
+        
+        
+        
+        
+        //	HELLO RAY (hi me!)
+        //	this is how we pass our shader string off to the CLI environment
+        char * fileText = strdup( _shaderIngestContents->c_str() );
+        
+        
+        
+        
         std::string fileName = "stdin";
         compUnit.addString(fileName, fileText);
         compUnits.push_back(compUnit);
@@ -1817,9 +1882,16 @@ void CompileFile(const char* fileName, ShHandle compiler)
     int ret = 0;
     char* shaderString;
     if ((Options & EOptionStdin) != 0) {
-        std::istreambuf_iterator<char> begin(std::cin), end;
-        std::string tempString(begin, end);
-        shaderString = strdup(tempString.c_str());
+        //std::istreambuf_iterator<char> begin(std::cin), end;
+        //std::string tempString(begin, end);
+        //shaderString = strdup(tempString.c_str());
+        
+        
+        
+        
+        //	HELLO RAY (hi me!)
+        //	this is how we pass our shader string off to the CLI environment
+        shaderString = strdup( _shaderIngestContents->c_str() );
     } else {
         shaderString = ReadFileData(fileName);
     }
@@ -2153,22 +2225,64 @@ void InfoLogMsg(const char* msg, const char* name, const int num)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-#include "GLSLangValidatorLib.hpp"
-
-
 void GLSLangValidatorLibFunc()  {
     fprintf(stderr, "**** %s ****\n", __PRETTY_FUNCTION__);
+}
+
+bool ConvertGLSLVertShaderToSPIRV(const std::string & inShaderString, std::vector<uint32_t> & outSPIRVData)	{
+	outSPIRVData.clear();
+	if (inShaderString.size() < 1)	{
+		return false;
+	}
+	
+	std::lock_guard<std::mutex>		tmpLock(_GLSLangValidatorLibLock);
+	_shaderIngestContents = &inShaderString;
+	_spirvBinaryOutputContents = &outSPIRVData;
+	
+	//	the invocation we want to match is:
+	//	./glslangValidator -G --amb --aml --stdin -S vert
+	
+	char		*argv[] = {
+		const_cast<char*>("./glslangValidator"),
+		const_cast<char*>("-G"),
+		//const_cast<char*>("-V"),
+		const_cast<char*>("--amb"),
+		const_cast<char*>("--aml"),
+		const_cast<char*>("--stdin"),
+		const_cast<char*>("-S"),
+		const_cast<char*>("vert")
+	};
+	
+	this_was_originally_the_glslangValidator_CLIs_main_entrypoint(7, argv);
+	
+	return true;
+}
+
+bool ConvertGLSLFragShaderToSPIRV(const std::string & inShaderString, std::vector<uint32_t> & outSPIRVData)	{
+	outSPIRVData.clear();
+	if (inShaderString.size() < 1)	{
+		return false;
+	}
+	
+	std::lock_guard<std::mutex>		tmpLock(_GLSLangValidatorLibLock);
+	_shaderIngestContents = &inShaderString;
+	_spirvBinaryOutputContents = &outSPIRVData;
+	
+	//	the invocation we want to match is:
+	//	./glslangValidator -G --amb --aml --stdin -S frag
+	
+	char		*argv[] = {
+		const_cast<char*>("./glslangValidator"),
+		const_cast<char*>("-G"),
+		//const_cast<char*>("-V"),
+		const_cast<char*>("--amb"),
+		const_cast<char*>("--aml"),
+		const_cast<char*>("--stdin"),
+		const_cast<char*>("-S"),
+		const_cast<char*>("frag")
+	};
+	
+	this_was_originally_the_glslangValidator_CLIs_main_entrypoint(7, argv);
+	
+	return true;
 }
