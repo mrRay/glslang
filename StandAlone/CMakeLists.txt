@@ -162,9 +162,11 @@ endif()
 # we can use to do a single op.  goal is to mimic the creation of the standalone's cmake invocation as much as possible- 
 # so if changes are made subsequently to it, they should also be applied to our lib!
 set(STANDALONE_LIB_SOURCES GLSLangValidatorLib.cpp DirStackFileIncluder.h  ${GLSLANG_INTRINSIC_H})
-add_library(GLSLangValidatorLib STATIC ${STANDALONE_LIB_SOURCES})
+add_library(GLSLangValidatorLib SHARED ${STANDALONE_LIB_SOURCES})
 target_compile_features(GLSLangValidatorLib PUBLIC cxx_std_20)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS True)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH YES)
 target_link_libraries(GLSLangValidatorLib ${LIBRARIES})
 target_include_directories(GLSLangValidatorLib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/GLSLangValidatorLib")
+set_target_properties(GLSLangValidatorLib PROPERTIES INSTALL_RPATH @loader_path/../Frameworks/)
