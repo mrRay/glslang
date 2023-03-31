@@ -41,6 +41,8 @@ if(POLICY CMP0054)
   cmake_policy(SET CMP0054 NEW)
 endif()
 
+set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+
 project(glslang)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
