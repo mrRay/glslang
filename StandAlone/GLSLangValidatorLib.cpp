@@ -89,6 +89,7 @@
 	for general use outside of this class without more work!
 */
 #include "GLSLangValidatorLib.hpp"
+#include "stdcapture.h"
 #include <mutex>
 #include <vector>
 std::mutex			_GLSLangValidatorLibLock;
@@ -2364,7 +2365,7 @@ void CleanupStateMachine()	{
 	PreambleString = std::string("");
 }
 
-bool ConvertGLSLVertShaderToSPIRV(const std::string & inShaderString, std::vector<uint32_t> & outSPIRVData)	{
+bool ConvertGLSLVertShaderToSPIRV(const std::string & inShaderString, std::vector<uint32_t> & outSPIRVData, std::string & outErrString)	{
 	outSPIRVData.clear();
 	if (inShaderString.size() < 1)	{
 		return false;
@@ -2388,14 +2389,23 @@ bool ConvertGLSLVertShaderToSPIRV(const std::string & inShaderString, std::vecto
 		const_cast<char*>("vert")
 	};
 	
-	this_was_originally_the_glslangValidator_CLIs_main_entrypoint(7, argv);
+	bool		returnMe = false;
+	
+	std::string captureErr;
+	{
+		std::capture::CaptureStdout		cap([&](const char *buf, size_t bufSize)	{
+			outErrString += std::string(buf, bufSize);
+		});
+		
+		returnMe = (this_was_originally_the_glslangValidator_CLIs_main_entrypoint(7, argv) == 0);
+	}
 	
 	CleanupStateMachine();
 	
-	return true;
+	return returnMe;
 }
 
-bool ConvertGLSLFragShaderToSPIRV(const std::string & inShaderString, std::vector<uint32_t> & outSPIRVData)	{
+bool ConvertGLSLFragShaderToSPIRV(const std::string & inShaderString, std::vector<uint32_t> & outSPIRVData, std::string & outErrString)	{
 	outSPIRVData.clear();
 	if (inShaderString.size() < 1)	{
 		return false;
@@ -2419,9 +2429,19 @@ bool ConvertGLSLFragShaderToSPIRV(const std::string & inShaderString, std::vecto
 		const_cast<char*>("frag")
 	};
 	
-	this_was_originally_the_glslangValidator_CLIs_main_entrypoint(7, argv);
+	bool		returnMe = false;
+	
+	std::string captureErr;
+	{
+		std::capture::CaptureStdout		cap([&](const char *buf, size_t bufSize)	{
+			outErrString += std::string(buf, bufSize);
+		});
+		
+		returnMe = (this_was_originally_the_glslangValidator_CLIs_main_entrypoint(7, argv) == 0);
+	}
 	
 	CleanupStateMachine();
 	
-	return true;
+	return returnMe;
 }
+
