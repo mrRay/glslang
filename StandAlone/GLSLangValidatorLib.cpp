@@ -2298,6 +2298,72 @@ void GLSLangValidatorLibFunc()  {
     fprintf(stderr, "**** %s ****\n", __PRETTY_FUNCTION__);
 }
 
+void CleanupStateMachine()	{
+	targetHlslFunctionality1 = false;
+	SpvToolsDisassembler = false;
+	SpvToolsValidate = false;
+	NaNClamp = false;
+	stripDebugInfo = false;
+	emitNonSemanticShaderDebugInfo = false;
+	emitNonSemanticShaderDebugSource = false;
+	beQuiet = false;
+	VulkanRulesRelaxed = false;
+	autoSampledTextures = false;
+	
+	CompileFailed = 0;
+	LinkFailed = 0;
+	CompileOrLinkFailed = 0;
+	
+	ReflectOptions = EShReflectionDefault;
+	Options = EOptionNone;
+	ExecutableName = nullptr;
+	binaryFileName = nullptr;
+	depencyFileName = nullptr;
+	entryPointName = nullptr;
+	sourceEntryPointName = nullptr;
+	shaderStageName = nullptr;
+	variableName = nullptr;
+	HlslEnable16BitTypes = false;
+	HlslDX9compatible = false;
+	HlslDxPositionW = false;
+	EnhancedMsgs = false;
+	AbsolutePath = false;
+	DumpBuiltinSymbols = false;
+	IncludeDirectoryList = std::vector<std::string>();
+	
+	ClientInputSemanticsVersion = 100;
+	
+	Client = glslang::EShClientNone;  // will stay EShClientNone if only validating
+	//ClientVersion;       // not valid until Client is set
+	TargetLanguage = glslang::EShTargetNone;
+	//TargetVersion;     // not valid until TargetLanguage is set
+	
+	GlslVersion = 0; // GLSL version specified on CLI, overrides #version in shader source
+	
+	Processes = std::vector<std::string>();                     // what should be recorded by OpModuleProcessed, or equivalent
+	
+	uniformLocationOverrides = std::vector<std::pair<std::string, int>>();
+	uniformBase = 0;
+	
+	baseBinding = std::array<std::array<unsigned int, EShLangCount>, glslang::EResCount>();
+	baseBindingForSet = std::array<std::array<TPerSetBaseBinding, EShLangCount>, glslang::EResCount>();
+	baseResourceSetBinding = std::array<std::vector<std::string>, EShLangCount>();
+	
+	blockStorageOverrides = std::vector<std::pair<std::string, glslang::TBlockStorageClass>>();
+	
+	setGlobalUniformBlock = false;
+	globalUniformName = std::string("");
+	globalUniformBinding = 0;
+	globalUniformSet = 0;
+	
+	setGlobalBufferBlock = false;
+	atomicCounterBlockName = std::string("");
+	atomicCounterBlockSet = 0;
+	
+	UserPreamble = TPreamble();
+	PreambleString = std::string("");
+}
+
 bool ConvertGLSLVertShaderToSPIRV(const std::string & inShaderString, std::vector<uint32_t> & outSPIRVData)	{
 	outSPIRVData.clear();
 	if (inShaderString.size() < 1)	{
@@ -2312,7 +2378,7 @@ bool ConvertGLSLVertShaderToSPIRV(const std::string & inShaderString, std::vecto
 	//	./glslangValidator -G --amb --aml --stdin -S vert
 	
 	char		*argv[] = {
-		const_cast<char*>("./glslangValidator"),
+		const_cast<char*>("./glslang"),
 		const_cast<char*>("-G"),
 		//const_cast<char*>("-V"),
 		const_cast<char*>("--amb"),
@@ -2323,6 +2389,8 @@ bool ConvertGLSLVertShaderToSPIRV(const std::string & inShaderString, std::vecto
 	};
 	
 	this_was_originally_the_glslangValidator_CLIs_main_entrypoint(7, argv);
+	
+	CleanupStateMachine();
 	
 	return true;
 }
@@ -2341,7 +2409,7 @@ bool ConvertGLSLFragShaderToSPIRV(const std::string & inShaderString, std::vecto
 	//	./glslangValidator -G --amb --aml --stdin -S frag
 	
 	char		*argv[] = {
-		const_cast<char*>("./glslangValidator"),
+		const_cast<char*>("./glslang"),
 		const_cast<char*>("-G"),
 		//const_cast<char*>("-V"),
 		const_cast<char*>("--amb"),
@@ -2352,6 +2420,8 @@ bool ConvertGLSLFragShaderToSPIRV(const std::string & inShaderString, std::vecto
 	};
 	
 	this_was_originally_the_glslangValidator_CLIs_main_entrypoint(7, argv);
+	
+	CleanupStateMachine();
 	
 	return true;
 }
