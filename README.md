@@ -2,6 +2,11 @@
 ![Continuous Deployment](https://github.com/KhronosGroup/glslang/actions/workflows/continuous_deployment.yml/badge.svg)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/KhronosGroup/glslang/badge)](https://securityscorecards.dev/viewer/?uri=github.com/KhronosGroup/glslang)
 
+# THIS IS A FORK
+
+The original repo can be found [here](https://github.com/KhronosGroup/glslang).
+This fork exists to implement a crude lib that encompasses functionality found in this repo.  It doesn't contain anything worth pushing upstream.
+
 # News
 
 1. `OGLCompiler` and `HLSL` stub libraries have been fully removed from the build.
